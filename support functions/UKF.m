@@ -1,32 +1,11 @@
-function [x_ukf,P_ukf,NEES,NIS] = UKF(x_t,y_t,station,tvec)
-load('orbitdeterm_finalproj_KFdata.mat')
-mu = 398600;
+function [x_ukf,P_ukf,NEES,NIS] = UKF(x_t,y_t,station,tvec, Qtrue, Rtrue)
+% load('orbitdeterm_finalproj_KFdata.mat')
 
-% y_d = y_t()
-% if any(any(isnan(y_d))) || any(any(isempty(y_d)))
-% %             yk = ystat(:,:,station(i));
-% %             yk = yk(:,i);
-%             stationCur = station(i);
-%         else
-%             stationCur = y_d(4);
-%             yk = y_d(1:3,1);
-%         end
-
-dt = 10;
-Omk = dt*[0 0 ; 1 0; 0 0 ; 0 1];
-perturb_x0 = [0,0.075,0,-0.021];
-
-P0 = 1e-3*eye(4);
-P_p = P0; %Covariance matrix
-dx_p = perturb_x0';
-% Qk = [0.02 0; 0 0.02];
-Rp1 = Rtrue; %measurement noise
-
-xp = [6678, 0, 0, 6678 * sqrt(mu/(6678^3))]';
-Pp = 100*eye(4,4);
-y_k = zeros(3,1);
-Qk = Qtrue;
-Rk = Rtrue;
+xp = x_t(:,1); % initial value of x
+Pp = 10*eye(7);  % Define covariance - 7 for each state variable
+y_k = zeros(3,1); %% ---
+Qk = eye(7); % Process Noise
+Rk = eye(20*3); % Measurement noise 
 
 %preallocate for UKF loop
 n = length(x_t(:,1)); 
@@ -46,10 +25,8 @@ for i = 1:length(tvec)
     Pxy_p1 = zeros(4,3);
 
     
-%1. dynamics prediction step from time step k->k+1
-    %%%%%%%%%%%%%%%%%%%
-    %part a
-    %%%%%%%%%%%%%%%%%%%
+%% 1. dynamics prediction step from time step k->k+1
+    %part A: generate sigma points from xp
     chik0 = xp;
     for j = 1:n
         chik(:,j) = xp + (sqrt(n+lambda)*Sk(j,:)');
@@ -59,16 +36,17 @@ for i = 1:length(tvec)
     end
     chi_comb = [chik0, chik];
     inp_ic = chi_comb; 
-    %%%%%%%%%%%%%%%%%%%
-    %part b
-    %%%%%%%%%%%%%%%%%%%
-    for j = 1:2*n+1
-        func = @(t,inp)[inp(2); -mu*inp(1)/(sqrt((inp(1)^2+inp(3)^2))^3);
-            inp(4); -mu*inp(3)/(sqrt((inp(1)^2+inp(3)^2))^3)];
-        tspan = [0 10]; %%%%%%%%%%%
-        [~, xout] = ode45(func,tspan,inp_ic(:,j));
-        chi_m(:,j) = xout(end,:)';
-    end
+    
+    %part B: put sigma points through dynamic non-linear EOM
+    % for j = 1:2*n+1
+    %     func = @(t,inp)[inp(2); -mu*inp(1)/(sqrt((inp(1)^2+inp(3)^2))^3); % change dynamics
+    %         inp(4); -mu*inp(3)/(sqrt((inp(1)^2+inp(3)^2))^3)];
+    %     tspan = [0 10]; %%%%%%%%%%%
+    %     [~, xout] = ode45(func,tspan,inp_ic(:,j));
+    %     chi_m(:,j) = xout(end,:)';
+    % end
+    [chi_m] = non_linear_xsim(n,inp_ic,c)
+
     %%%%%%%%%%%%%%%%%%%
     %part c - recombine resultants
     %%%%%%%%%%%%%%%%%%%
@@ -86,7 +64,7 @@ for i = 1:length(tvec)
         P_iter = w_c(:,j).*(chi_m(:,j) - xm_p1)*(chi_m(:,j) - xm_p1)' + Qk;%THIS IS THE ERROR
         Pm_p1 = Pm_p1 + P_iter; 
     end
-%2. Measurement Update Step at time k+1 given observation y(k+1)
+%% 2. Measurement Update Step at time k+1 given observation y(k+1)
     %%%%%%%%%%%%%%%%%%%
     %part a - generate sigma pts
     %%%%%%%%%%%%%%%%%%%

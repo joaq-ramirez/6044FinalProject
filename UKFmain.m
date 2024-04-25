@@ -50,7 +50,6 @@ for m = 1:N
 
 %Noisy Data sim of x
 for i = 1:length(tvec)
-
     %Simulate truth
     w_k = mvnrnd(zeros(2,1),Qk); % of Qtrue
     t_k = tvec(i);
@@ -84,6 +83,8 @@ end
 NEESmean = mean(NEES);
 NISmean = mean(NIS);
 
+
+%% UKF
 function [x_ukf,P_ukf,NEES,NIS] = UKF(x_t,y_t,station,tvec)
 load('orbitdeterm_finalproj_KFdata.mat')
 mu = 398600;
@@ -103,11 +104,10 @@ Omk = dt*[0 0 ; 1 0; 0 0 ; 0 1];
 perturb_x0 = [0,0.075,0,-0.021];
 
 P0 = 1e-3*eye(4);
-P_p = P0; %What is P0? set it smalll..
+P_p = P0; %Covariance matrix
 dx_p = perturb_x0';
-Qk = Qtrue; 
 % Qk = [0.02 0; 0 0.02];
-Rp1 = Rtrue; 
+Rp1 = Rtrue; %measurement noise
 
 xp = [6678, 0, 0, 6678 * sqrt(mu/(6678^3))]';
 Pp = 100*eye(4,4);
