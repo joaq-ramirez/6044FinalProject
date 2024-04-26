@@ -5,7 +5,7 @@ staion = 0; %placeholder
 xp = x_t(:,1); % initial value of x
 Pp = 10*eye(7);  % Define covariance - 7 for each state variable
 y_k = zeros(3,1); %% ---
-Rk = eye(20*3); % Measurement noise 
+Rk = eye(3); % Measurement noise 
 
 %preallocate for UKF loop
 n = length(x_t(:,1)); 
@@ -22,7 +22,7 @@ for i = 1:length(tvec)
     Qk = zeros(7); %Will need to adjust later
 %     Pm_p1 = zeros(4,4);
     Pyy_p1 = zeros(3,3);
-    Pxy_p1 = zeros(4,3);
+    Pxy_p1 = zeros(7,3); %nxp
 
     
 %% 1. dynamics prediction step from time step k->k+1
@@ -89,6 +89,8 @@ for i = 1:length(tvec)
     %%%%%%%%%%%%%%%%%%%
     %part a - generate sigma pts
     %%%%%%%%%%%%%%%%%%%
+    Pm_p1 = eye(7); % PLACE HOLDER ------------
+
     Sk_p1 = chol(Pm_p1,'lower');
 %     Sk_p1 = chol(eye(4),'lower');
     %repeat above steps for chi k+1
@@ -129,7 +131,7 @@ for i = 1:length(tvec)
     %%%%%%%%%%%%%%%%%%%
     %part f - Perform kalman state and covariance update with observation yk+1 (nxp)
     %%%%%%%%%%%%%%%%%%%    
-    xp_p1 = xm_p1 + Kk_p1*(y_t(:,i,station(i))- ym_p1);
+    xp_p1 = xm_p1 + Kk_p1*(y_t(:,i)- ym_p1);
     Pp_p1 = Pm_p1 - Pxy_p1*inv(Pyy_p1)*Pxy_p1';
 
     %Store variables
