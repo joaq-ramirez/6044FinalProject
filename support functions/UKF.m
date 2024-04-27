@@ -3,7 +3,7 @@ staion = 0; %placeholder
 % load('orbitdeterm_finalproj_KFdata.mat')
 
 xp = x_t(:,1); % initial value of x
-Pp = 10*eye(7);  % Define covariance - 7 for each state variable
+Pp = 1*eye(7);  % Define covariance - 7 for each state variable
 y_k = zeros(3,1); %% ---
 Rk = eye(3); % Measurement noise 
 
@@ -11,7 +11,7 @@ Rk = eye(3); % Measurement noise
 n = length(x_t(:,1)); 
 kappa = 0;
 beta = 2; 
-alpha = 0.001;% estimate
+alpha = 0.01;% smaller values go to EKF
 lambda = alpha^2 * (n+kappa)-n; 
 tlast = 0;
 
@@ -60,9 +60,18 @@ for i = 1:length(tvec)
     end
     w_m = [lambda/(n+lambda),w_mi];
     w_c = [lambda/(n+lambda)+1-alpha^2+beta,w_ci];
-
-    xm_p1 = sum(w_m.*chi_m,2); % separate chi_m into quaternions and angular rates then sum with weights ---
     
+    % add quaternions for xm_p1 sum
+    xmprev = eye(3); 
+    for j = 1:2*n+1
+        xmcurr = EP2C(chi_m(1:4,j)); % what is the perturbed quaternion???
+        xm_p1_mat = xmcurr*xmprev;  % separate chi_m into quaternions and angular rates then sum with weights ---
+        xmprev = EP2C(chi_m(1:4,j));
+    end
+    xm_p1 = sum(w_m.*chi_m,2); % sum along dim 2
+    xm_p1(1:4) = C2EP(xm_p1_mat); 
+
+
     P_iter = zeros(7,7);
     Pm_p1 = zeros(7,7);
     for j = 1:2*n+1
@@ -71,7 +80,7 @@ for i = 1:length(tvec)
         chiC = EP2C(chi_m(1:4,j));
         xmC = EP2C(xm_p1(1:4));
         quat_C = chiC*xmC'; %transpose xmC?
-        quat_sub = C2EP(quat_C);
+        quat_sub = C2EP(quat_C)/norm(C2EP(quat_C)); % Normalize error
 
         ang_sub = chi_m(5:7,j) - xm_p1(5:7); % Is this right?? ---
         x_sub = [quat_sub ; ang_sub];
