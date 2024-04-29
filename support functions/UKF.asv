@@ -6,7 +6,7 @@ xp = x_t(:,1); % initial value of x
 Pp = 1*eye(6);  % Define covariance - 6 because only 6 DOF (quaternions are constrained to 3)
 y_k = zeros(3,1); %% ---
 Rk = eye(3); % Measurement noise
-Qk = zeros(6); % Will need to adjust later
+Qk = zeros(6); 
 
 % preallocate for UKF loop
 n = length(Pp(:,1)); 
@@ -15,13 +15,12 @@ n = length(Pp(:,1));
 % alpha = sqrt(2); % smaller values go to EKF
 % lambda = alpha^2 * (n+kappa)-n; 
 % tlast = 0;
-x_ukf = zeros(7,length(tvec));
-P_ukf = zeros(6,6,length(tvec));
 
 for i = 1:length(tvec)
     %reset each loop
 %     Pp = 100*eye(4,4);
-    Sk = chol(Pp+Qk,'lower');
+    Sk = chol(Pp+Qk,'lower');    
+    Qk = zeros(6); 
 %     Pm_p1 = zeros(4,4);
 %    Pyy_p1 = zeros(3,3);
 %    Pxy_p1 = zeros(7,3); %nxp
@@ -49,7 +48,7 @@ for i = 1:length(tvec)
 
     for j = (n+1):2*n
         % W = -sqrt(n+lambda)*Sk(j-n,:)';
-        W = -sqrt(2*n)*Sk(j-n,:)';
+        W = -sqrt(2*n)*Sk(j,:)';
         theta = norm(W(1:3)); % Principal Rotation of perturbations on attitude
         if theta < 1e-8
             q = [1 0 0 0].';
@@ -94,7 +93,7 @@ for i = 1:length(tvec)
     [q_bar, E] = Q_mean(chi_m(1:4,:),chi_m(1:4,1),1e-3);
 
     % Averaging the Angular Velocity Portion of chi_m
-    w_bar = 1/(2*n)*sum(chi_m(5:7,:),2);
+    w_bar = 1/(2*n)*sum(chi_m(5:7,:));
 
     % Propogated State Estimate
     xm_p1 = [q_bar;w_bar]; 
@@ -157,7 +156,7 @@ for i = 1:length(tvec)
 
     for j = (n+1):2*n
         % W = -sqrt(n+lambda)*Sk(j-n,:)';
-        W = -sqrt(2*n)*Sk_p1(j-n,:)';
+        W = -sqrt(2*n)*Sk_p1(j,:)';
         theta = norm(W(1:3)); % Principal Rotation of perturbations on attitude
         if theta < 1e-8
             q = [1 0 0 0].';

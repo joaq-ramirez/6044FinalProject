@@ -43,14 +43,14 @@ end
 
 
 %% Declare constants
-c.I = [0.012 0 0;0 0.01 0;0 0 0.006]; 
+c.I = eye(3).*[10 50 20]; 
 
 % EP Attitude [0.7543859649122806, 0.087719298245614, 0.1754385964912281, -0.2631578947368421] (B/N)
 % Inertial Position [4863577.031787383, 4863577.031787383, 0.0] (m in inertial frame)
 % Inertial Velocity [5382.927016299871, -5382.927016299871, 0.0] (m/s in inertial frame)
 % Angular Velocity [0.017453292519943295, 0.03490658503988659, -0.017453292519943295] (rad/s of B/N in B frame)
 
-[x_ukf,P_ukf,NEES,NIS] = UKF(x_t(:,3:length(x_t)),y_t(:,3:length(y_t)),tvec(3:length(tvec)),c);
+[x_ukf,P_ukf,NEES,NIS] = UKF(x_t,y_t,tvec,c);
 
 %% Inital plotting of sim data
 
