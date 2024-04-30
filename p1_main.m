@@ -40,6 +40,7 @@ for i = 1:length(tvec)
     y_t(:,i) = inv(ss_mapping.'*ss_mapping)*ss_mapping.'*ss_meas(i,:)';
 end
 
+plot(tvec,y_t)
 
 
 %% Declare constants

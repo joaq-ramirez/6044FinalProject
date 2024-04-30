@@ -4,9 +4,8 @@ staion = 0; %placeholder
 
 xp = x_t(:,1); % initial value of x
 Pp = 1*eye(6);  % Define covariance - 6 because only 6 DOF (quaternions are constrained to 3)
-y_k = zeros(3,1); %% ---
-Rk = eye(3); % Measurement noise
-Qk = zeros(6); % Will need to adjust later
+Rk = 1*eye(3); % Measurement noise
+Qk = 1*eye(6); % Will need to adjust later
 
 % preallocate for UKF loop
 n = length(Pp(:,1)); 
@@ -20,12 +19,7 @@ P_ukf = zeros(6,6,length(tvec));
 
 for i = 1:length(tvec)
     %reset each loop
-%     Pp = 100*eye(4,4);
     Sk = chol(Pp+Qk,'lower');
-%     Pm_p1 = zeros(4,4);
-%    Pyy_p1 = zeros(3,3);
-%    Pxy_p1 = zeros(7,3); %nxp
-
     
 %% 1. dynamics prediction step from time step k->k+1
     %%%%%%%%%%%%%%%%%%%
@@ -91,10 +85,10 @@ for i = 1:length(tvec)
 
     % Averaging the Quaternion portion of chi_m and recording error vectors
     % (for the Covariance Calcualtions)
-    [q_bar, E] = Q_mean(chi_m(1:4,:),chi_m(1:4,1),1e-3);
+    [q_bar, E] = Q_mean(chi_m(1:4,:));
 
     % Averaging the Angular Velocity Portion of chi_m
-    w_bar = 1/(2*n)*sum(chi_m(5:7,:),2);
+    w_bar = 1/(2*n+1)*sum(chi_m(5:7,:),2);
 
     % Propogated State Estimate
     xm_p1 = [q_bar;w_bar]; 
@@ -108,7 +102,7 @@ for i = 1:length(tvec)
         Wp(:,j) = [E(:,j); chi_m(5:7,j)-w_bar];
 
         % State Covariance Estimate
-        Pm_p1 = Pm_p1 + 1/(2*n)*(Wp(:,j)*Wp(:,j).');
+        Pm_p1 = Pm_p1 + 1/(2*n+1)*(Wp(:,j)*Wp(:,j).');
     end
 
 %     P_iter = zeros(7,7);
@@ -181,19 +175,20 @@ for i = 1:length(tvec)
     %%%%%%%%%%%%%%%%%%%
     %part c - get predicted measurement mean and measurement covar
     %%%%%%%%%%%%%%%%%%%   
-    ym_p1 = 1/(2*n)*sum(gam_p1,2);
+    ym_p1 = 1/(2*n+1)*sum(gam_p1,2);
 
     Pyy_p1 = zeros(3);
     for j = 1:2*n+1
-        P_iter_yy = 1/(2*n)*(gam_p1(:,j) - ym_p1)*(gam_p1(:,j) - ym_p1).' + Rk;
+        P_iter_yy = 1/(2*n+1)*(gam_p1(:,j) - ym_p1)*(gam_p1(:,j) - ym_p1).' + Rk;
         Pyy_p1 = Pyy_p1 + P_iter_yy; 
     end
 
     %%%%%%%%%%%%%%%%%%%
     %part d - get state measurement cross-covariance matrix (nxp)
     %%%%%%%%%%%%%%%%%%%  
+    Pxy_p1 = zeros(6,3);
     for j = 1:2*n+1
-    Pxy_p1_iter = 1/(2*n)*(Wp(:,j)*(gam_p1(:,j)-ym_p1).');
+    Pxy_p1_iter = 1/(2*n+1)*(Wp(:,j)*(gam_p1(:,j)-ym_p1).');
     Pxy_p1 = Pxy_p1 + Pxy_p1_iter;
     end
 
@@ -204,8 +199,17 @@ for i = 1:length(tvec)
 
     %%%%%%%%%%%%%%%%%%%
     %part f - Perform kalman state and covariance update with observation yk+1 (nxp)
-    %%%%%%%%%%%%%%%%%%%    
-    xp_p1 = xm_p1 + Kk_p1*(y_t(:,i)- ym_p1);
+    %%%%%%%%%%%%%%%%%%%  
+    update = Kk_p1*(y_t(:,i) - ym_p1);
+    u_ang = norm(update(1:3));
+    u_vec = update(1:3)/norm(update(1:3));
+    u_quat = [cos(u_ang/2);u_vec*sin(u_ang/2)];
+    u_quat = u_quat/norm(u_quat);
+    
+    xp_quat = EP_Add(xm_p1(1:4),u_quat);
+    xp_quat = xp_quat/norm(xp_quat);
+
+    xp_p1 = [xp_quat;xm_p1(5:7)+update(4:6)];
     Pp_p1 = Pm_p1 - Pxy_p1*inv(Pyy_p1)*Pxy_p1.';
 
     %Store variables
@@ -216,7 +220,6 @@ for i = 1:length(tvec)
     Pp = Pp_p1;
     tlast = tvec(i);
 end
-
 
 NEES = 1;
 NIS = 1; 
