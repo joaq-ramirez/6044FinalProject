@@ -4,7 +4,7 @@
 %% Housekeeping
 clear all; clc; close all; 
 rng(100)
-addpath 'C:\Users\alexn\Documents\Graduate School\Spring 2024\ASEN 6044\6044FinalProject\support functions'
+addpath '.\support functions'
 
 %% Data load
 %Load quaternion and w data
@@ -37,7 +37,9 @@ ss_mapping = [-0.866,-0.500,0.000;
               -0.500,-0.866,0.000];
 y_t = zeros(3,length(ss_meas));
 for i = 1:length(tvec)
-    y_t(:,i) = inv(ss_mapping.'*ss_mapping)*ss_mapping.'*ss_meas(i,:)';
+    % y_t(:,i) = inv(ss_mapping.'*ss_mapping)*ss_mapping.'*ss_meas(i,:)';
+    y_t(:,i) = pinv(ss_mapping)*ss_meas(i,:)';
+    y_t(:,i) = y_t(:,i)/ norm(y_t(:,i));
 end
 
 plot(tvec,y_t)
@@ -66,7 +68,7 @@ c.I = [0.012 0 0;0 0.01 0;0 0 0.006];
 %     ylabel(ylabl(i))
 % end
 
-figure(1)
+figure
 subplot(4,1,1)
 plot(tvec(3:601),x_t(1,3:601),tvec(3:601),x_ukf(1,1:599))
 subplot(4,1,2)
@@ -76,7 +78,7 @@ plot(tvec(3:601),x_t(3,3:601),tvec(3:601),x_ukf(3,1:599))
 subplot(4,1,4)
 plot(tvec(3:601),x_t(4,3:601),tvec(3:601),x_ukf(4,1:599))
 
-figure(2)
+figure
 subplot(3,1,1)
 plot(tvec(3:601),x_t(5,3:601),tvec(3:601),x_ukf(5,1:599))
 subplot(3,1,2)

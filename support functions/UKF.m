@@ -1,10 +1,10 @@
 function [x_ukf,P_ukf,NEES,NIS] = UKF(x_t,y_t,tvec,c)
-staion = 0; %placeholder
 % load('orbitdeterm_finalproj_KFdata.mat')
 
 xp = x_t(:,1); % initial value of x
 Pp = 0.01*eye(6);  % Define covariance - 6 because only 6 DOF (quaternions are constrained to 3)
-Rk = 0.01*eye(3); % Measurement noise
+% Pp(1:3,1:3) = 0.01*eye(3);
+Rk = 0.001*eye(3); % Measurement noise
 Qk = 1e-3*eye(6); % Will need to adjust later
 
 % preallocate for UKF loop
@@ -20,7 +20,7 @@ P_ukf = zeros(6,6,length(tvec));
 for i = 1:length(tvec)
     %reset each loop
     Sk = chol(Pp+Qk,'lower');
-    i
+    i;
     
 %% 1. dynamics prediction step from time step k->k+1
     %%%%%%%%%%%%%%%%%%%
@@ -31,6 +31,7 @@ for i = 1:length(tvec)
     for j = 1:n
         % W = sqrt(n+lambda)*Sk(j,:)';
         W = sqrt(2*n)*Sk(j,:)';
+
         theta = norm(W(1:3)); % Principal Rotation of perturbations on attitude
         if theta < 1e-8
             q = [1 0 0 0].';
@@ -176,11 +177,11 @@ for i = 1:length(tvec)
     %%%%%%%%%%%%%%%%%%%
     %part c - get predicted measurement mean and measurement covar
     %%%%%%%%%%%%%%%%%%%   
-    ym_p1 = 1/(2*n+1)*sum(gam_p1,2);
+    ym_p1(:,i) = 1/(2*n+1)*sum(gam_p1,2);
 
     Pyy_p1 = zeros(3);
     for j = 1:2*n+1
-        P_iter_yy = 1/(2*n+1)*(gam_p1(:,j) - ym_p1)*(gam_p1(:,j) - ym_p1).' + Rk;
+        P_iter_yy = 1/(2*n+1)*(gam_p1(:,j) - ym_p1(:,i))*(gam_p1(:,j) - ym_p1(:,i)).' + Rk;
         Pyy_p1 = Pyy_p1 + P_iter_yy; 
     end
 
@@ -189,7 +190,7 @@ for i = 1:length(tvec)
     %%%%%%%%%%%%%%%%%%%  
     Pxy_p1 = zeros(6,3);
     for j = 1:2*n+1
-    Pxy_p1_iter = 1/(2*n+1)*(Wp(:,j)*(gam_p1(:,j)-ym_p1).');
+    Pxy_p1_iter = 1/(2*n+1)*(Wp(:,j)*(gam_p1(:,j)-ym_p1(:,i)).');
     Pxy_p1 = Pxy_p1 + Pxy_p1_iter;
     end
 
@@ -201,7 +202,7 @@ for i = 1:length(tvec)
     %%%%%%%%%%%%%%%%%%%
     %part f - Perform kalman state and covariance update with observation yk+1 (nxp)
     %%%%%%%%%%%%%%%%%%%  
-    update = Kk_p1*(y_t(:,i) - ym_p1);
+    update = Kk_p1*(y_t(:,i) - ym_p1(:,i));
     u_ang = norm(update(1:3));
     u_vec = update(1:3)/norm(update(1:3));
     u_quat = [cos(u_ang/2);u_vec*sin(u_ang/2)];
@@ -224,5 +225,8 @@ end
 
 NEES = 1;
 NIS = 1; 
+
+figure
+plot(tvec,ym_p1(:,:))
 
 end
