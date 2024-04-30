@@ -9,10 +9,10 @@ Qk = 1e-3*eye(6); % Will need to adjust later
 
 % preallocate for UKF loop
 n = length(Pp(:,1)); 
-% kappa = 0;
-% beta = 0; 
-% alpha = sqrt(2); % smaller values go to EKF
-% lambda = alpha^2 * (n+kappa)-n; 
+kappa = 0;
+beta = 2; 
+alpha = sqrt(2); % smaller values go to EKF
+lambda = alpha^2 * (n+kappa)-n; 
 % tlast = 0;
 x_ukf = zeros(7,length(tvec));
 P_ukf = zeros(6,6,length(tvec));
@@ -20,7 +20,7 @@ P_ukf = zeros(6,6,length(tvec));
 for i = 1:length(tvec)
     %reset each loop
     Sk = chol(Pp+Qk,'lower');
-    i
+    i;
     
 %% 1. dynamics prediction step from time step k->k+1
     %%%%%%%%%%%%%%%%%%%
@@ -30,6 +30,7 @@ for i = 1:length(tvec)
     chik0 = xp; %Initial chi_mean
     for j = 1:n
         % W = sqrt(n+lambda)*Sk(j,:)';
+        W_omega = sqrt(n+lambda)*Sk(j,:)';
         W = sqrt(2*n)*Sk(j,:)';
         theta = norm(W(1:3)); % Principal Rotation of perturbations on attitude
         if theta < 1e-8
@@ -39,11 +40,12 @@ for i = 1:length(tvec)
             q = [cos(theta/2);e*sin(theta/2)]; % Quaternion representation of perturbations 
             q = q/norm(q);
         end
-        chik(:,j) = [EP_Add(xp(1:4),q); xp(5:7)+W(4:6)]; % Combining the two
+        chik(:,j) = [EP_Add(xp(1:4),q); xp(5:7)+W_omega(4:6)]; % Combining the two
     end
 
     for j = (n+1):2*n
         % W = -sqrt(n+lambda)*Sk(j-n,:)';
+        W_omega = -sqrt(n+lambda)*Sk(j-n,:)';
         W = -sqrt(2*n)*Sk(j-n,:)';
         theta = norm(W(1:3)); % Principal Rotation of perturbations on attitude
         if theta < 1e-8
@@ -53,26 +55,37 @@ for i = 1:length(tvec)
             q = [cos(theta/2);e*sin(theta/2)]; % Quaternion representation of perturbations 
             q = q/norm(q);
         end
-        chik(:,j) = [EP_Add(xp(1:4),q); xp(5:7)+W(4:6)]; % Combining the two
+        chik(:,j) = [EP_Add(xp(1:4),q); xp(5:7)+W_omega(4:6)]; % Combining the two
     end
     chi_comb = [chik0, chik];
+
+    if i == 200
+        figure
+        plot3(chi_comb(5,1),chi_comb(6,1),chi_comb(7,1), 'g*')
+        hold on
+        for j = 2:length(chi_comb)
+            plot3(chi_comb(5,j),chi_comb(6,j),chi_comb(7,j)','.')
+        end
+        hold off
+    end
     
     inp_ic = chi_comb; 
     %%%%%%%%%%%%%%%%%%%
     %part B: put sigma points through dynamic non-linear EOM
     %%%%%%%%%%%%%%%%%%%
 
+    % inp_ic = ones(7,13).*chik0; % REMOVE LATER DEBUGGING 
     [chi_m] = non_linear_xsim(inp_ic,c);
 
     %%%%%%%%%%%%%%%%%%%
-    %part c - recombine resultants
+    %part c - recombine results and recalculate propogated mean
     %%%%%%%%%%%%%%%%%%%
-%     for j = 1:2*n %includes 0 thus +1
-%         w_mi(:,j) = 1/(2*(n+lambda));
-%         w_ci(:,j) = w_mi(j);
-%     end
-%     w_m = [lambda/(n+lambda),w_mi];
-%     w_c = [lambda/(n+lambda)+1-alpha^2+beta,w_ci];
+    for j = 1:2*n %includes 0 thus +1
+        w_mi(:,j) = 1/(2*(n+lambda));
+        w_ci(:,j) = w_mi(j);
+    end
+    w_m = [lambda/(n+lambda),w_mi];
+    w_c = [lambda/(n+lambda)+1-alpha^2+beta,w_ci];
 %     
 %     % add quaternions for xm_p1 sum
 %     xmprev = eye(3); 
@@ -89,7 +102,8 @@ for i = 1:length(tvec)
     [q_bar, E] = Q_mean(chi_m(1:4,:));
 
     % Averaging the Angular Velocity Portion of chi_m
-    w_bar = 1/(2*n+1)*sum(chi_m(5:7,:),2);
+    % w_bar = 1/(2*n+1)*sum(chi_m(5:7,:),2);
+    w_bar = sum(w_m.*chi_m(5:7,:),2); %factor in weights for angular rate
 
     % Propogated State Estimate
     xm_p1 = [q_bar;w_bar]; 
@@ -103,7 +117,10 @@ for i = 1:length(tvec)
         Wp(:,j) = [E(:,j); chi_m(5:7,j)-w_bar];
 
         % State Covariance Estimate
-        Pm_p1 = Pm_p1 + 1/(2*n+1)*(Wp(:,j)*Wp(:,j).');
+        % Pm_p1 = Pm_p1 + 1/(2*n+1)*(Wp(:,j)*Wp(:,j).');
+        Pm_p1(1:3,1:3) = Pm_p1(1:3,1:3) + 1/(2*n+1)*(Wp(1:3,j)*Wp(1:3,j).');
+        Pm_p1a = Pm_p1 + w_c(j)*(Wp(:,j)*Wp(:,j)');
+        Pm_p1(4:6,4:6) = Pm_p1a(4:6,4:6);
     end
 
 %     P_iter = zeros(7,7);

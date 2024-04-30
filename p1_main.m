@@ -4,7 +4,8 @@
 %% Housekeeping
 clear all; clc; close all; 
 rng(100)
-addpath 'C:\Users\alexn\Documents\Graduate School\Spring 2024\ASEN 6044\6044FinalProject\support functions'
+addpath '.\support functions'
+% addpath 'C:\Users\alexn\Documents\Graduate School\Spring 2024\ASEN 6044\6044FinalProject\support functions'
 
 %% Data load
 %Load quaternion and w data
@@ -45,6 +46,7 @@ plot(tvec,y_t)
 
 %% Declare constants
 c.I = [0.012 0 0;0 0.01 0;0 0 0.006]; 
+c.tstep = 1; 
 
 % EP Attitude [0.7543859649122806, 0.087719298245614, 0.1754385964912281, -0.2631578947368421] (B/N)
 % Inertial Position [4863577.031787383, 4863577.031787383, 0.0] (m in inertial frame)
@@ -66,7 +68,7 @@ c.I = [0.012 0 0;0 0.01 0;0 0 0.006];
 %     ylabel(ylabl(i))
 % end
 
-figure(1)
+figure
 subplot(4,1,1)
 plot(tvec(3:601),x_t(1,3:601),tvec(3:601),x_ukf(1,1:599))
 subplot(4,1,2)
@@ -76,7 +78,7 @@ plot(tvec(3:601),x_t(3,3:601),tvec(3:601),x_ukf(3,1:599))
 subplot(4,1,4)
 plot(tvec(3:601),x_t(4,3:601),tvec(3:601),x_ukf(4,1:599))
 
-figure(2)
+figure
 subplot(3,1,1)
 plot(tvec(3:601),x_t(5,3:601),tvec(3:601),x_ukf(5,1:599))
 subplot(3,1,2)
