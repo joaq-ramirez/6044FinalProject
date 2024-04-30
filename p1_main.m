@@ -65,3 +65,21 @@ c.I = [0.012 0 0;0 0.01 0;0 0 0.006];
 %     xlabel("Time [s]")
 %     ylabel(ylabl(i))
 % end
+
+figure(1)
+subplot(4,1,1)
+plot(tvec(3:601),x_t(1,3:601),tvec(3:601),x_ukf(1,1:599))
+subplot(4,1,2)
+plot(tvec(3:601),x_t(2,3:601),tvec(3:601),x_ukf(2,1:599))
+subplot(4,1,3)
+plot(tvec(3:601),x_t(3,3:601),tvec(3:601),x_ukf(3,1:599))
+subplot(4,1,4)
+plot(tvec(3:601),x_t(4,3:601),tvec(3:601),x_ukf(4,1:599))
+
+figure(2)
+subplot(3,1,1)
+plot(tvec(3:601),x_t(5,3:601),tvec(3:601),x_ukf(5,1:599))
+subplot(3,1,2)
+plot(tvec(3:601),x_t(6,3:601),tvec(3:601),x_ukf(6,1:599))
+subplot(3,1,3)
+plot(tvec(3:601),x_t(7,3:601),tvec(3:601),x_ukf(7,1:599))

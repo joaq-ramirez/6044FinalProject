@@ -3,9 +3,9 @@ staion = 0; %placeholder
 % load('orbitdeterm_finalproj_KFdata.mat')
 
 xp = x_t(:,1); % initial value of x
-Pp = 1*eye(6);  % Define covariance - 6 because only 6 DOF (quaternions are constrained to 3)
-Rk = 1*eye(3); % Measurement noise
-Qk = 1*eye(6); % Will need to adjust later
+Pp = 0.01*eye(6);  % Define covariance - 6 because only 6 DOF (quaternions are constrained to 3)
+Rk = 0.01*eye(3); % Measurement noise
+Qk = 1e-3*eye(6); % Will need to adjust later
 
 % preallocate for UKF loop
 n = length(Pp(:,1)); 
@@ -20,6 +20,7 @@ P_ukf = zeros(6,6,length(tvec));
 for i = 1:length(tvec)
     %reset each loop
     Sk = chol(Pp+Qk,'lower');
+    i
     
 %% 1. dynamics prediction step from time step k->k+1
     %%%%%%%%%%%%%%%%%%%
@@ -61,7 +62,7 @@ for i = 1:length(tvec)
     %part B: put sigma points through dynamic non-linear EOM
     %%%%%%%%%%%%%%%%%%%
 
-    [chi_m] = non_linear_xsim(n,inp_ic,c);
+    [chi_m] = non_linear_xsim(inp_ic,c);
 
     %%%%%%%%%%%%%%%%%%%
     %part c - recombine resultants
@@ -217,7 +218,7 @@ for i = 1:length(tvec)
     P_ukf(:,:,i) = Pp_p1;
     %Set for next iteration
     xp = xp_p1;
-    Pp = Pp_p1;
+    Pp = Pp_p1
     tlast = tvec(i);
 end
 

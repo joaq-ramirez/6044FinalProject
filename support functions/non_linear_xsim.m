@@ -1,4 +1,4 @@
-function [chi_m] = non_linear_xsim(n,IC,c)
+function [chi_m] = non_linear_xsim(IC,c)
 %non_linear_xsim Simulate EP and angular rates of spacecraft
 tstep = 1; 
 func = @(inp)[
@@ -7,9 +7,10 @@ func = @(inp)[
         ];
 tspan = [0 1]; %match timestep size
 
-chi_m = zeros(7,2*n+1);
+n = length(IC(1,:));
+chi_m = zeros(7,n);
 
-for j = 1:2*n+1 % Iterate through chi points
+for j = 1:n % Iterate through chi points
 %     [~, xout] = ode45(func,tspan,IC(:,j));
 
     k1 = tstep * func(IC(:,j));
