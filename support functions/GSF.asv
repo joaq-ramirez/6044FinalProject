@@ -206,30 +206,27 @@ for k = 1:length(x_t)
             wm(l*s) = wi(s)*GMModel.ComponentProportion(l);
         end
     end
-        
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Calculate the estimates
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Calculate the estimates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % ISSUE WITH ROUTINE (NEED TO DETERMINE HOW TO DO WEIGHTED QUATERNION
     % SUMMATION)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    for j = 1:length(wm)
-        % Compute Average Values
-        x_gsf(:,k) = x_gsf(:,k)+wm(j)*xp_p1(:,j);
+for j = 1:length(wm)
+    % Compute Average Values
+    x_gsf(:,k) = x_gsf(:,k)+wm(j)*xp_p1(:,j);
+
+    % Computing the P Coveriance Matrix
+    p_ang = 2*acos(xp_p1(1,j));
+    p_vec = sin(p_ang/2)*xp_p1(2:4,j);
+    xp_vec =[p_vec; xp_p1(5:7,j)];
     
-        % Computing the P Coveriance Matrix
-        p_ang = 2*acos(xp_p1(1,j));
-        p_vec = sin(p_ang/2)*xp_p1(2:4,j);
-        xp_vec =[p_vec; xp_p1(5:7,j)];
-        P_gsf(:,:,k) = P_gsf(:,:,k)+wm(j)*(Pp_p1(:,:,j)+xp_vec*xp_vec.');
-        
-        p_ang = 2*acos(x_gsf(1,k));
-        p_vec = sin(p_ang/2)*x_gsf(2:4,k);
-        xp_vec =[p_vec; x_gsf(5:7,k)];
-        P_gsf(:,:,k) = P_gsf(:,:,k)-xp_vec*xp_vec.';
-    end
+    P_gsf(:,:,k) = P_gsf(:,:,k)+wm(j)*(Pp_p1(:,:,j)+xp_vec*xp_.');
+    P_gsf(:,:,k) = P_gsf(:,:,k)-x_gsf(:,k)*x_gsf(:,k).';
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compress the Gaussian Mixtures
