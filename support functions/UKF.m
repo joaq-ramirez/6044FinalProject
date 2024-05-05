@@ -130,7 +130,6 @@ for i = 1:length(tvec)
     %%%%%%%%%%%%%%%%%%%
     %part a - generate sigma pts
     %%%%%%%%%%%%%%%%%%%
-    % Pm_p1 = eye(7); % PLACE HOLDER ------------
 
     Sk_p1 = chol(Pm_p1,'lower');
 
@@ -219,7 +218,7 @@ for i = 1:length(tvec)
     P_ukf(:,:,i) = Pp_p1;
     %Set for next iteration
     xp = xp_p1;
-    Pp = Pp_p1
+    Pp = Pp_p1;
     tlast = tvec(i);
 end
 

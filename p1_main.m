@@ -37,7 +37,6 @@ ss_mapping = [-0.866,-0.500,0.000;
               -0.500,-0.866,0.000];
 y_t = zeros(3,length(ss_meas));
 for i = 1:length(tvec)
-    % y_t(:,i) = inv(ss_mapping.'*ss_mapping)*ss_mapping.'*ss_meas(i,:)';
     y_t(:,i) = pinv(ss_mapping)*ss_meas(i,:)';
     y_t(:,i) = y_t(:,i)/ norm(y_t(:,i));
 end
@@ -53,7 +52,13 @@ c.I = [0.012 0 0;0 0.01 0;0 0 0.006];
 % Inertial Velocity [5382.927016299871, -5382.927016299871, 0.0] (m/s in inertial frame)
 % Angular Velocity [0.017453292519943295, 0.03490658503988659, -0.017453292519943295] (rad/s of B/N in B frame)
 
+%% UKF Estimation
+
 [x_ukf,P_ukf,NEES,NIS] = UKF(x_t(:,3:length(x_t)),y_t(:,3:length(y_t)),tvec(3:length(tvec)),c);
+
+%% GSF Estimation
+[x_gsf,P_gsf] = GSF(x_t(:,3:length(x_t)),y_t(:,3:length(y_t)),tvec(3:length(tvec)),c);
+
 
 %% Inital plotting of sim data
 

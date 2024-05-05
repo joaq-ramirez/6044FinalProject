@@ -7,6 +7,7 @@ clc
 
 % Pull in CSS data set
 dat = load("..\datasets\Sun_Sensor_Data_Albedo.csv");
+% dat = load("..\datasets\GMM_Sun_Sensor_Data_Noise.csv");
 
 % Set Random Number Generator
 rng(22)
@@ -23,11 +24,12 @@ for j = 1:20
 end 
 
 csvwrite("..\datasets\Sun_Sensor_Data_Albedo_Reflections.csv",dat);
+% csvwrite("..\datasets\GMM_Sun_Sensor_Data_Noise_Plus.csv",dat);
 
-% dat = load("..\datasets\Sun_Sensor_Data_Albedo_Reflections.csv");
+% dat = load("..\datasets\GMM_Sun_Sensor_Data_Noise_Plus.csv");
 % 
 % % Plot Results to check outputs
-% t = 0:1:600;
+% t = 0:0.5:600;
 % figure(1)
 % plot(t,dat(:,1),...
 %     t,dat(:,2),...
