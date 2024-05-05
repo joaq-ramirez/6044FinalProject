@@ -102,6 +102,7 @@ for k = 1:length(x_t)
         % Weight update (multiplied by one since Gaussian Process Noise)
         wi(i) = wm(i); 
     end
+    wi = wi/norm(wi);
 
     %% 2. Measurement Update Step at time k+1 given observation y(k+1)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -206,19 +207,20 @@ for k = 1:length(x_t)
             wm(l*s) = wi(s)*GMModel.ComponentProportion(l);
         end
     end
-        
+    wm = wm/norm(wm);    
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate the estimates
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % ISSUE WITH ROUTINE (NEED TO DETERMINE HOW TO DO WEIGHTED QUATERNION
-    % SUMMATION)
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Compute Average Values
+    w_gsf = zeros(3,1);
     for j = 1:length(wm)
-        % Compute Average Values
-        x_gsf(:,k) = x_gsf(:,k)+wm(j)*xp_p1(:,j);
+        w_gsf = w_gsf+wm(j)*xp_p1(5:7,j);
+    end
+    x_gsf(:,k) = [QUEST(xp_p1(1:4,:),wm); w_gsf];
     
+    for j = 1:length(wm)
         % Computing the P Coveriance Matrix
         p_ang = 2*acos(xp_p1(1,j));
         p_vec = sin(p_ang/2)*xp_p1(2:4,j);

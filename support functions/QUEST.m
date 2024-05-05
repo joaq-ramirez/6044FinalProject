@@ -39,7 +39,7 @@ function [b_av] = QUEST(b_vecs,w_vec)
 
     qbar = inv( (lam+trace(B))*eye(3) - S )*z;
     Bbar = (1/sqrt( (1+qbar'*qbar) )) * [1;qbar];
-    quest_dcm = (Bbar(1)^2 - Bbar(2:4)'*Bbar(2:4))*eye(3) + 2*Bbar(2:4)*Bbar(2:4)' - 2*Bbar(1)*tilde(Bbar(2:4))
+    quest_dcm = (Bbar(1)^2 - Bbar(2:4)'*Bbar(2:4))*eye(3) + 2*Bbar(2:4)*Bbar(2:4)' - 2*Bbar(1)*tilde(Bbar(2:4));
     b_av = C2EP(quest_dcm); 
 end
 

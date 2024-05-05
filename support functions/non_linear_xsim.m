@@ -20,7 +20,7 @@ for j = 1:n % Iterate through chi points
     xout= IC(:,j) + (1/6) * (k1 + 2*k2 + 2*k3 + k4);
 
     % Re-Normalize the Quaternion
-    % xout(1:4) = xout(1:4)/norm(xout(1:4));
+    xout(1:4) = xout(1:4)/norm(xout(1:4));
 
     chi_m(:,j) = xout.'; % prediction
 end
