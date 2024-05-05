@@ -16,7 +16,7 @@ function [b_av] = QUEST(b_vecs,w_vec)
     % K=[S-eye(3)*trB z; z' trB];
     [dummy, lam]=eigs(K, 1);
 
-    % detS=det(S);
+    % detS=det(S);s
     % adjS=detS*inv(S);
     % trB = trace(B); 
     % 
