@@ -5,7 +5,7 @@ xp = x_t(:,1); % initial value of x
 Pp = 0.001*eye(6);  % Define covariance - 6 because only 6 DOF (quaternions are constrained to 3)
 % Pp(1:3,1:3) = 0.01*eye(3);
 Rk = 0.001*eye(3); % Measurement noise
-Qk = 1e-5*eye(6); % Will need to adjust later
+Qk = 0.000001*eye(6); % Will need to adjust later
 
 % preallocate for UKF loop
 n = length(Pp(:,1)); 
@@ -161,10 +161,17 @@ for i = 1:length(tvec)
     ym_p1(:,i) = ym_p1(:,i)/ norm(ym_p1(:,i)); 
 
     %Debug plot
-    % figure
-    % quiver3(zeros(1,13), zeros(1,13), zeros(1,13),gam_p1(1,:), gam_p1(2,:), gam_p1(3,:));
-    % hold on
-    % quiver3(0, 0,0,ym_p1(1,:), ym_p1(2,:), ym_p1(3,:),'r');
+    
+%Debugging
+    if i == 500
+        figure
+        quiver3(zeros(1,13), zeros(1,13), zeros(1,13),gam_p1(1,:), gam_p1(2,:), gam_p1(3,:));
+        hold on
+        quiver3(0, 0,0,ym_p1(1,i), ym_p1(2,i), ym_p1(3,i),'r');
+        quiver3(0, 0,0,y_t(1,i), y_t(2,i), y_t(3,i),'g');
+        fprintf('debug')
+
+    end
 
     Pyy_p1 = zeros(3);
     for j = 1:2*n+1
@@ -178,16 +185,16 @@ for i = 1:length(tvec)
     %%%%%%%%%%%%%%%%%%%
     %part d - get state measurement cross-covariance matrix (nxp)
     %%%%%%%%%%%%%%%%%%%  
-    Pxy_p1 = zeros(6,3);
+    Cxy_p1 = zeros(6,3);
     for j = 1:2*n+1
-        Pxy_p1_iter = 1/(2*n+1)*(Wp(:,j)*(gam_p1(:,j)-ym_p1(:,i)).');
-        Pxy_p1 = Pxy_p1 + Pxy_p1_iter;
+        Pxy_p1_iter = 1/(2*n+1)*(Wp(:,j)*(gam_p1(:,j)-ym_p1(:,i))');
+        Cxy_p1 = Cxy_p1 + Pxy_p1_iter;
     end
 
     %%%%%%%%%%%%%%%%%%%
     %part e - Estimate kalman gain matrix (nxp)
     %%%%%%%%%%%%%%%%%%%  
-    Kk_p1 = Pxy_p1*inv(Pyy_p1);
+    Kk_p1 = Cxy_p1*inv(Pyy_p1);
 
     %%%%%%%%%%%%%%%%%%%
     %part f - Perform kalman state and covariance update with observation yk+1 (nxp)
@@ -203,7 +210,8 @@ for i = 1:length(tvec)
     xp_quat = xp_quat/norm(xp_quat);
 
     xp_p1 = [xp_quat;xm_p1(5:7)+update(4:6)];
-    Pp_p1 = Pm_p1 - Pxy_p1*inv(Pyy_p1)*Pxy_p1';
+    % Pp_p1 = Pm_p1 - Cxy_p1*inv(Pyy_p1)*Cxy_p1';
+    Pp_p1 = Pm_p1 - Kk_p1*Pyy_p1*Kk_p1'; 
 
     %Store variables
     x_ukf(:,i) = xp_p1;

@@ -22,9 +22,9 @@ for j = 1:n % Iterate through chi points
     % Re-Normalize the Quaternion
     xout(1:4) = xout(1:4)/norm(xout(1:4));
 
-    % if xout(1) < 0
-    %         xout(1:4) = -xout(1:4);     
-    % end
+    if xout(1) < 0
+            xout(1:4) = -xout(1:4);     
+    end
 
     chi_m(:,j) = xout'; % prediction
 end

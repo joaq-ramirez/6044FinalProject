@@ -15,6 +15,8 @@ tvec = 0:1:10*60;
 
 %load sun sensor data
 ss_meas = load("datasets\Sun_Sensor_Data_Albedo.csv");
+% ss_meas = load("datasets\Sun_Sensor_Data_No_Albedo.csv");
+
 ss_mapping = [-0.866,-0.500,0.000;
               -0.866,0.000,0.500;
               -0.866,0.500,0.000;
