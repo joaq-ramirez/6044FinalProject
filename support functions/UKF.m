@@ -1,4 +1,4 @@
-function [x_ukf,P_ukf,NEES,NIS] = UKF(x_t,y_t,tvec,c)
+function [x_ukf,P_ukf] = UKF(x_t,y_t,tvec,c)
 % load('orbitdeterm_finalproj_KFdata.mat')
 
 xp = x_t(:,1); % initial value of x
@@ -221,9 +221,6 @@ for i = 1:length(tvec)
     Pp = Pp_p1;
     tlast = tvec(i);
 end
-
-NEES = 1;
-NIS = 1; 
 
 figure
 plot(tvec,ym_p1(:,:))
