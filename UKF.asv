@@ -1,0 +1,85 @@
+%% UKF Function
+%Authors: Joaquin Ramirez, Alex Nelson
+
+%% Housekeeping
+clear all; clc; close all; 
+rng(100)
+%% Load in test data set to validate UKF
+load('orbitdeterm_finalproj_KFdata.mat')
+
+rE = 6378;
+mu = 4*10^5;
+omega_e = 2*pi/86400;
+
+perturb_x0 = [0,0.075,0,-0.021]';
+x0 = [6678, 0, 0, 6678 * sqrt(mu/(6678^3))]';
+
+B = [0 0;
+    1 0;
+    0 0;
+    0 1];
+Gamma = [0 0;
+        1 0;
+        0 0;
+        0 1];
+delT = 10;
+x = x0+perturb_x0;
+P = 2*pi*sqrt(6678^3/mu);
+
+%data vars: Qtrue, Rtrue, tvec, ydata
+%Important Notes:
+%No input u
+dt = delT;
+Qk = Qtrue; %% from loaded data set
+
+
+Omk = dt*[0 0 ; 1 0; 0 0 ; 0 1];
+Sw = chol(Qk,'lower');
+Sv = chol(Rtrue,'lower');
+
+% Monte Carlo Sim
+
+N = 10;
+n = 2;
+
+alpha = 0.05;
+
+for m = 1:N
+
+    x_k = [6678, 0, 0, 6678 * sqrt(mu/(6678^3))]';
+
+%Noisy Data sim of x
+for i = 1:length(tvec)
+
+    %Simulate truth
+    w_k = mvnrnd(zeros(2,1),Qk); % of Qtrue
+    t_k = tvec(i);
+
+    [~,x_nom] = ode45(@(t,x) odeLKF(t_k,x,[0;0]),[0 dt],x_k);
+
+    x_nom = x_nom'; 
+    
+    x_k = x_nom(:,end);
+
+    xnomp(:,i) = x_nom(:,end);
+
+    w = Sw*randn(2,1);
+    x_t(:,i) = xnomp(:,i) + Omk*w; % Truth solution
+    %Simulate measurement truth
+    for j = 1:12
+        v = Sv*randn(3,1);
+        y_t(:,i,j) = dynamicsCalc(x_t(:,i),j,t_k)+v;
+        if any(~isnan(y_t(:,i,j)))
+            station(:,i,1) = j;            
+        end
+    end
+end
+
+[x_ukf,P_ukf,NEES,NIS] = UKF(x_t,y_t,station,tvec);
+
+xdiff = x_t - x_ukf;
+
+end
+
+NEESmean = mean(NEES);
+NISmean = mean(NIS);

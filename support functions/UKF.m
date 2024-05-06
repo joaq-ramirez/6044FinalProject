@@ -2,10 +2,10 @@ function [x_ukf,P_ukf,NEES,NIS] = UKF(x_t,y_t,tvec,c)
 % load('orbitdeterm_finalproj_KFdata.mat')
 
 xp = x_t(:,1); % initial value of x
-Pp = 0.01*eye(6);  % Define covariance - 6 because only 6 DOF (quaternions are constrained to 3)
+Pp = 0.001*eye(6);  % Define covariance - 6 because only 6 DOF (quaternions are constrained to 3)
 % Pp(1:3,1:3) = 0.01*eye(3);
 Rk = 0.001*eye(3); % Measurement noise
-Qk = 1e-3*eye(6); % Will need to adjust later
+Qk = 1e-5*eye(6); % Will need to adjust later
 
 % preallocate for UKF loop
 n = length(Pp(:,1)); 
@@ -34,7 +34,7 @@ for i = 1:length(tvec)
 
         theta = norm(W(1:3)); % Principal Rotation of perturbations on attitude
         if theta < 1e-8
-            q = [1 0 0 0].';
+            q = [1 0 0 0]';
         else
             e = W(1:3)/norm(W(1:3)); % Principal Vector of perturbations on attitude
             q = [cos(theta/2);e*sin(theta/2)]; % Quaternion representation of perturbations 
@@ -46,9 +46,10 @@ for i = 1:length(tvec)
     for j = (n+1):2*n
         % W = -sqrt(n+lambda)*Sk(j-n,:)';
         W = -sqrt(2*n)*Sk(j-n,:)';
+
         theta = norm(W(1:3)); % Principal Rotation of perturbations on attitude
         if theta < 1e-8
-            q = [1 0 0 0].';
+            q = [1 0 0 0]';
         else
             e = W(1:3)/norm(W(1:3)); % Principal Vector of perturbations on attitude
             q = [cos(theta/2);e*sin(theta/2)]; % Quaternion representation of perturbations 
@@ -90,10 +91,10 @@ for i = 1:length(tvec)
     [q_bar, E] = Q_mean(chi_m(1:4,:));
 
     % Averaging the Angular Velocity Portion of chi_m
-    w_bar = 1/(2*n+1)*sum(chi_m(5:7,:),2);
+    omega_bar = 1/(2*n+1)*sum(chi_m(5:7,:),2);
 
     % Propogated State Estimate
-    xm_p1 = [q_bar;w_bar]; 
+    xm_p1 = [q_bar;omega_bar]; 
 
     % Estimating the State Covariance    
     Wp = zeros(6,length(chi_m(1,:)));
@@ -101,31 +102,11 @@ for i = 1:length(tvec)
 
     for j = 1:length(chi_m(1,:))
         % Differences between average state and sigma points
-        Wp(:,j) = [E(:,j); chi_m(5:7,j)-w_bar];
+        Wp(:,j) = [E(:,j); chi_m(5:7,j)-omega_bar];
 
         % State Covariance Estimate
         Pm_p1 = Pm_p1 + 1/(2*n+1)*(Wp(:,j)*Wp(:,j).');
     end
-
-%     P_iter = zeros(7,7);
-%     Pm_p1 = zeros(7,7);
-%     for j = 1:2*n+1
-% 
-%         %subtract quaternion components
-%         chiC = EP2C(chi_m(1:4,j));
-%         xmC = EP2C(xm_p1(1:4));
-%         quat_C = chiC*xmC'; %transpose xmC?
-%         quat_sub = C2EP(quat_C)/norm(C2EP(quat_C)); % Normalize error
-% 
-%         ang_sub = chi_m(5:7,j) - xm_p1(5:7); % Is this right?? ---
-%         x_sub = [quat_sub ; ang_sub];
-% 
-%         % P_iter = w_c(:,j).*(chi_m(:,j) - xm_p1)*(chi_m(:,j) - xm_p1)' + Qk;
-%         P_iter = w_c(:,j).*(x_sub)*(x_sub)' + Qk;
-%         Pm_p1 = Pm_p1 + P_iter; 
-%     end
-
-
 %% 2. Measurement Update Step at time k+1 given observation y(k+1)
     %%%%%%%%%%%%%%%%%%%
     %part a - generate sigma pts
@@ -177,20 +158,30 @@ for i = 1:length(tvec)
     %part c - get predicted measurement mean and measurement covar
     %%%%%%%%%%%%%%%%%%%   
     ym_p1(:,i) = 1/(2*n+1)*sum(gam_p1,2);
+    ym_p1(:,i) = ym_p1(:,i)/ norm(ym_p1(:,i)); 
+
+    %Debug plot
+    % figure
+    % quiver3(zeros(1,13), zeros(1,13), zeros(1,13),gam_p1(1,:), gam_p1(2,:), gam_p1(3,:));
+    % hold on
+    % quiver3(0, 0,0,ym_p1(1,:), ym_p1(2,:), ym_p1(3,:),'r');
 
     Pyy_p1 = zeros(3);
     for j = 1:2*n+1
-        P_iter_yy = 1/(2*n+1)*(gam_p1(:,j) - ym_p1(:,i))*(gam_p1(:,j) - ym_p1(:,i)).' + Rk;
+        % meas_diff = (gam_p1(:,j) - ym_p1(:,i))/ norm(gam_p1(:,j) - ym_p1(:,i));
+        % P_iter_yy = 1/(2*n+1)*(meas_diff)*(meas_diff');
+
+        P_iter_yy = 1/(2*n+1)*(gam_p1(:,j) - ym_p1(:,i))*(gam_p1(:,j) - ym_p1(:,i)).';
         Pyy_p1 = Pyy_p1 + P_iter_yy; 
     end
-
+    Pyy_p1 = Pyy_p1 + Rk; 
     %%%%%%%%%%%%%%%%%%%
     %part d - get state measurement cross-covariance matrix (nxp)
     %%%%%%%%%%%%%%%%%%%  
     Pxy_p1 = zeros(6,3);
     for j = 1:2*n+1
-    Pxy_p1_iter = 1/(2*n+1)*(Wp(:,j)*(gam_p1(:,j)-ym_p1(:,i)).');
-    Pxy_p1 = Pxy_p1 + Pxy_p1_iter;
+        Pxy_p1_iter = 1/(2*n+1)*(Wp(:,j)*(gam_p1(:,j)-ym_p1(:,i)).');
+        Pxy_p1 = Pxy_p1 + Pxy_p1_iter;
     end
 
     %%%%%%%%%%%%%%%%%%%
@@ -204,6 +195,7 @@ for i = 1:length(tvec)
     update = Kk_p1*(y_t(:,i) - ym_p1(:,i));
     u_ang = norm(update(1:3));
     u_vec = update(1:3)/norm(update(1:3));
+
     u_quat = [cos(u_ang/2);u_vec*sin(u_ang/2)];
     u_quat = u_quat/norm(u_quat);
     
@@ -211,7 +203,7 @@ for i = 1:length(tvec)
     xp_quat = xp_quat/norm(xp_quat);
 
     xp_p1 = [xp_quat;xm_p1(5:7)+update(4:6)];
-    Pp_p1 = Pm_p1 - Pxy_p1*inv(Pyy_p1)*Pxy_p1.';
+    Pp_p1 = Pm_p1 - Pxy_p1*inv(Pyy_p1)*Pxy_p1';
 
     %Store variables
     x_ukf(:,i) = xp_p1;

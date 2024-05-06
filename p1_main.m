@@ -57,7 +57,7 @@ c.I = [0.012 0 0;0 0.01 0;0 0 0.006];
 [x_ukf,P_ukf,NEES,NIS] = UKF(x_t(:,3:length(x_t)),y_t(:,3:length(y_t)),tvec(3:length(tvec)),c);
 
 %% GSF Estimation
-[x_gsf,P_gsf] = GSF(x_t(:,3:length(x_t)),y_t(:,3:length(y_t)),tvec(3:length(tvec)),c);
+% [x_gsf,P_gsf] = GSF(x_t(:,3:length(x_t)),y_t(:,3:length(y_t)),tvec(3:length(tvec)),c);
 
 
 %% Inital plotting of sim data

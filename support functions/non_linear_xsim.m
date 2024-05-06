@@ -3,7 +3,7 @@ function [chi_m] = non_linear_xsim(IC,c)
 tstep = 1; 
 func = @(inp)[
         0.5*BmatQuat(inp(1:4))*[inp(5:7)]; 
-        c.I\cross(-inp(5:7),c.I*inp(5:7)); 
+        c.I\(-cross(inp(5:7),c.I*inp(5:7))); 
         ];
 tspan = [0 1]; %match timestep size
 
@@ -22,7 +22,11 @@ for j = 1:n % Iterate through chi points
     % Re-Normalize the Quaternion
     xout(1:4) = xout(1:4)/norm(xout(1:4));
 
-    chi_m(:,j) = xout.'; % prediction
+    % if xout(1) < 0
+    %         xout(1:4) = -xout(1:4);     
+    % end
+
+    chi_m(:,j) = xout'; % prediction
 end
     %%%%%%
 end
