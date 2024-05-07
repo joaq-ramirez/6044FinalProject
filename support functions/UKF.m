@@ -2,12 +2,14 @@ function [x_ukf,P_ukf,NEES,NIS] = UKF(x_t,y_t,tvec,c)
 % load('orbitdeterm_finalproj_KFdata.mat')
 
 xp = x_t(:,1); % initial value of x
-Pp = 0.000001*eye(6);  % Define covariance - 6 because only 6 DOF (quaternions are constrained to 3)
+Pp = 0.001*eye(6);  % Define covariance - 6 because only 6 DOF (quaternions are constrained to 3)
 % Pp(1:3,1:3) = 0.01*eye(3);
 % Rk = 0.001*eye(3); % Measurement noise - pre omega
-Rk = 0.000001*eye(6); % Measurement noise
+Rk = 0.0001*eye(3); % Measurement noise
 
-Qk = 0.00001*eye(6); % Will need to adjust later Process Noise
+Qk = zeros(6);
+Qk(1:3,1:3) = 0.000001*eye(3); % Will need to adjust later Process Noise
+Qk(4:6,4:6) = 0.00001*eye(3); % Will need to adjust later Process Noise
 
 % preallocate for UKF loop
 n = length(Pp(:,1)); 
@@ -22,7 +24,7 @@ P_ukf = zeros(6,6,length(tvec));
 for i = 1:length(tvec)
     %reset each loop
     Sk = chol(Pp+Qk,'lower');
-    i;
+    i
     
 %% 1. dynamics prediction step from time step k->k+1
     %%%%%%%%%%%%%%%%%%%
@@ -36,7 +38,7 @@ for i = 1:length(tvec)
 
         theta = norm(W(1:3)); % Principal Rotation of perturbations on attitude
         if theta < 1e-8
-            q = [1 0 0 0]';
+            q = [1 0.5*W(1:3)']';
         else
             e = W(1:3)/norm(W(1:3)); % Principal Vector of perturbations on attitude
             q = [cos(theta/2);e*sin(theta/2)]; % Quaternion representation of perturbations 
@@ -51,7 +53,7 @@ for i = 1:length(tvec)
 
         theta = norm(W(1:3)); % Principal Rotation of perturbations on attitude
         if theta < 1e-8
-            q = [1 0 0 0]';
+            q = [1 0.5*W(1:3)'].';
         else
             e = W(1:3)/norm(W(1:3)); % Principal Vector of perturbations on attitude
             q = [cos(theta/2);e*sin(theta/2)]; % Quaternion representation of perturbations 
@@ -124,7 +126,7 @@ for i = 1:length(tvec)
         W = sqrt(2*n)*Sk_p1(j,:)';
         theta = norm(W(1:3)); % Principal Rotation of perturbations on attitude
         if theta < 1e-8
-            q = [1 0 0 0].';
+            q = [1 0.5*W(1:3)'].';
         else
             e = W(1:3)/norm(W(1:3)); % Principal Vector of perturbations on attitude
             q = [cos(theta/2);e*sin(theta/2)]; % Quaternion representation of perturbations 
@@ -138,7 +140,7 @@ for i = 1:length(tvec)
         W = -sqrt(2*n)*Sk_p1(j-n,:)';
         theta = norm(W(1:3)); % Principal Rotation of perturbations on attitude
         if theta < 1e-8
-            q = [1 0 0 0].';
+            q = [1 0.5*W(1:3)].';
         else
             e = W(1:3)/norm(W(1:3)); % Principal Vector of perturbations on attitude
             q = [cos(theta/2);e*sin(theta/2)]; % Quaternion representation of perturbations 
@@ -155,7 +157,7 @@ for i = 1:length(tvec)
     %%%%%%%%%%%%%%%%%%%
     %part b - propagate each chi through non-linear measurment function h
     %%%%%%%%%%%%%%%%%%%
-    gam_p1 = zeros(6,2*n+1);
+    gam_p1 = zeros(3,2*n+1); % post omega
 
     for j = 1:2*n+1
         [gam_p1(:,j)] = h_ysim(chik_p1(:,j));
@@ -179,7 +181,7 @@ for i = 1:length(tvec)
     % 
     % end
 
-    Pyy_p1 = zeros(6); % post omega
+    Pyy_p1 = zeros(3); % post omega
     for j = 1:2*n+1
         % meas_diff = (gam_p1(:,j) - ym_p1(:,i))/ norm(gam_p1(:,j) - ym_p1(:,i));
         % P_iter_yy = 1/(2*n+1)*(meas_diff)*(meas_diff');
@@ -191,7 +193,7 @@ for i = 1:length(tvec)
     %%%%%%%%%%%%%%%%%%%
     %part d - get state measurement cross-covariance matrix (nxp)
     %%%%%%%%%%%%%%%%%%%  
-    Cxy_p1 = zeros(6,6); % post omega was 6,3
+    Cxy_p1 = zeros(6,3); % post omega was 6,3
     for j = 1:2*n+1
         Pxy_p1_iter = 1/(2*n+1)*(Wp(:,j)*(gam_p1(:,j)-ym_p1(:,i))');
         Cxy_p1 = Cxy_p1 + Pxy_p1_iter;
@@ -205,22 +207,38 @@ for i = 1:length(tvec)
     %%%%%%%%%%%%%%%%%%%
     %part f - Perform kalman state and covariance update with observation yk+1 (nxp)
     %%%%%%%%%%%%%%%%%%%  
-    update = Kk_p1*(y_t(:,i) - ym_p1(:,i));
+    
+    %Attempt 2
+    % update = Kk_p1*(y_t(:,i) - ym_p1(:,i));
+    % v_cross = cross(ym_p1(1:3,i), update(1:3));
+    % w = v_cross/ norm(v_cross); 
 
+    % norm_rot = w(1:3)/ norm(w(1:3)); 
+    % theta_u = asin(min(max(norm(w), -1), 1)); 
+    % theta_u = acos(dot(ym_p1(1:3,i), y_t(1:3,i))/ (norm(ym_p1(1:3,i))* norm(y_t(1:3,i))));
+    % del_q =[cos(theta_u / 2); sin(theta_u / 2) * w];
+    % q_update = quatmultiply(xm_p1(1:4)',del_q');
+    % q_update = EP_Add(xm_p1(1:4),del_q);
+    % q_update = q_update/ norm(q_update); 
+
+    %Old attempt
+    update = Kk_p1*(y_t(:,i) - ym_p1(:,i));
     u_ang = norm(update(1:3));
     u_vec = update(1:3)/norm(update(1:3));
-
+    
     u_quat = [cos(u_ang/2);u_vec*sin(u_ang/2)];
     u_quat = u_quat/norm(u_quat);
     
     xp_quat = EP_Add(xm_p1(1:4),u_quat);
     % xp_quat = -(xm_p1(1:4).*u_quat);
     % xp_quat = xp_quat/norm(xp_quat);
-
+    
+    % xp_p1 = [q_update';xm_p1(5:7)+update(4:6)];
     xp_p1 = [xp_quat;xm_p1(5:7)+update(4:6)];
     % Pp_p1 = Pm_p1 - Cxy_p1*inv(Pyy_p1)*Cxy_p1';
     Pp_p1 = Pm_p1 - Kk_p1*Pyy_p1*Kk_p1'; 
-
+    
+    debug_update(:,i) = update; 
     %Store variables
     x_ukf(:,i) = xp_p1;
     P_ukf(:,:,i) = Pp_p1;
@@ -235,5 +253,9 @@ NIS = 1;
 
 figure
 plot(tvec,ym_p1(:,:))
+figure
+plot(tvec,debug_update(1:3,:))
+figure
+plot(tvec,debug_update(4:6,:))
 
 end

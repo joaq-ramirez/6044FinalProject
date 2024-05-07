@@ -57,24 +57,25 @@ for i = 1:600
 end
 
 N_Rs = [1; 0; 0];
-y_t = zeros(6,length(ss_meas));
+y_t = zeros(3,length(ss_meas));
 for i = 1:601
     beta_BN = x(1:4,i);
     BN = EP2C(beta_BN);
     y_t(1:3,i) = BN*N_Rs;%+0.01*rand()*ones(3,1);
 end
 
-% y_t = zeros(6,length(ss_meas));
-for i = 1:length(tvec)
-    % y_t(1:3,i) = pinv(ss_mapping)*ss_meas(i,:)';
-    % y_t(1:3,i) = y_t(1:3,i)/ norm(y_t(1:3,i));
-    y_t(4:6,i) = w_BN(i,:) ;%+ ones(1,3)*mvnrnd(0, 0.0000001); 
-end
-
-figure
-plot(tvec,y_t(1:3,:))
-figure
-plot(tvec,y_t(4:6,:))
+% %Add in angular rates
+% % y_t = zeros(6,length(ss_meas));
+% for i = 1:length(tvec)
+%     % y_t(1:3,i) = pinv(ss_mapping)*ss_meas(i,:)';
+%     % y_t(1:3,i) = y_t(1:3,i)/ norm(y_t(1:3,i));
+%     y_t(4:6,i) = w_BN(i,:) ;%+ ones(1,3)*mvnrnd(0, 0.0000001); 
+% end
+% 
+% figure
+% plot(tvec,y_t(1:3,:))
+% figure
+% plot(tvec,y_t(4:6,:))
 
 % plot(tvec,y_t)
 
