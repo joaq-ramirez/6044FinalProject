@@ -14,7 +14,8 @@ x_t = [B_BN, w_BN]';
 tvec = 0:1:10*60;
 
 %load sun sensor data
-ss_meas = load("datasets\Sun_Sensor_Data_Albedo.csv");
+% ss_meas = load("datasets\Sun_Sensor_Data_Albedo.csv");
+ss_meas = load("datasets\Sun_Sensor_Data_Albedo_Reflections.csv");
 % ss_meas = load("datasets\Sun_Sensor_Data_No_Albedo.csv");
 
 ss_mapping = [-0.866,-0.500,0.000;
@@ -64,6 +65,10 @@ for i = 1:601
     y_t(1:3,i) = BN*N_Rs;%+0.01*rand()*ones(3,1);
 end
 
+for i = 1:length(ss_meas)
+    noisy_y(:,i) = pinv(ss_mapping)*ss_meas(i,:)';
+end
+
 % %Add in angular rates
 % % y_t = zeros(6,length(ss_meas));
 % for i = 1:length(tvec)
@@ -86,11 +91,15 @@ end
 
 %% UKF Estimation
 
-[x_ukf,P_ukf,NEES,NIS] = UKF(x_t(:,3:length(x_t)),y_t(:,3:length(y_t)),tvec(3:length(tvec)),c);
+% [x_ukf,P_ukf,NEES,NIS] = UKF(x_t(:,3:length(x_t)),y_t(:,3:length(y_t)),tvec(3:length(tvec)),c);
 
 %% GSF Estimation
 % [x_gsf,P_gsf] = GSF(x_t(:,3:length(x_t)),y_t(:,3:length(y_t)),tvec(3:length(tvec)),c);
 
+%% Sun Sensor UKF
+ys_t = ss_meas; 
+xs_t = [y_t; w_BN'] ;
+[x_ukf,P_ukf,NEES,NIS] = UKFSunSensor(xs_t,ys_t,tvec(3:length(tvec)),c); % y_t is our new state
 
 %% Inital plotting of sim data
 
@@ -106,19 +115,18 @@ end
 % end
 
 figure
-subplot(4,1,1)
-plot(tvec(3:601),x_t(1,3:601),tvec(3:601),x_ukf(1,1:599))
-subplot(4,1,2)
-plot(tvec(3:601),x_t(2,3:601),tvec(3:601),x_ukf(2,1:599))
-subplot(4,1,3)
-plot(tvec(3:601),x_t(3,3:601),tvec(3:601),x_ukf(3,1:599))
-subplot(4,1,4)
-plot(tvec(3:601),x_t(4,3:601),tvec(3:601),x_ukf(4,1:599))
+subplot(3,1,1)
+plot(tvec(3:601),xs_t(1,3:601),tvec(3:601),x_ukf(1,1:599),tvec(3:601),noisy_y(1,1:599))
+subplot(3,1,2)
+plot(tvec(3:601),xs_t(2,3:601),tvec(3:601),x_ukf(2,1:599),tvec(3:601),noisy_y(2,1:599))
+subplot(3,1,3)
+plot(tvec(3:601),xs_t(3,3:601),tvec(3:601),x_ukf(3,1:599),tvec(3:601),noisy_y(3,1:599))
+
 
 figure
 subplot(3,1,1)
-plot(tvec(3:601),x_t(5,3:601),tvec(3:601),x_ukf(5,1:599))
+plot(tvec(3:601),x_t(5,3:601),tvec(3:601),x_ukf(4,1:599))
 subplot(3,1,2)
-plot(tvec(3:601),x_t(6,3:601),tvec(3:601),x_ukf(6,1:599))
+plot(tvec(3:601),x_t(6,3:601),tvec(3:601),x_ukf(5,1:599))
 subplot(3,1,3)
-plot(tvec(3:601),x_t(7,3:601),tvec(3:601),x_ukf(7,1:599))
+plot(tvec(3:601),x_t(7,3:601),tvec(3:601),x_ukf(6,1:599))
