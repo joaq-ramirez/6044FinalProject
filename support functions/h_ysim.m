@@ -8,4 +8,6 @@ BN = EP2C(beta_BN);
 
 gamma_m = BN*N_Rs; 
 
+gamma_m(4:6) = chik_p1(5:7);
+
 end
