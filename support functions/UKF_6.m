@@ -5,7 +5,7 @@ xp = x_t(:,1); % initial value of x
 Pp = 0.001*eye(6);  % Define covariance - 6 because only 6 DOF (quaternions are constrained to 3)
 % Pp(1:3,1:3) = 0.01*eye(3);
 % Rk = 0.001*eye(3); % Measurement noise - pre omega
-Rk = 0.001*eye(3); % Measurement noise
+Rk = 0.001*eye(6); % Measurement noise
 
 Qk = zeros(6);
 Qk(1:3,1:3) = 0.000001*eye(3); % Will need to adjust later Process Noise
@@ -157,10 +157,10 @@ for i = 1:length(tvec)
     %%%%%%%%%%%%%%%%%%%
     %part b - propagate each chi through non-linear measurment function h
     %%%%%%%%%%%%%%%%%%%
-    gam_p1 = zeros(3,2*n+1); % post omega
+    gam_p1 = zeros(6,2*n+1); % post omega
 
     for j = 1:2*n+1
-        [gam_p1(:,j)] = h_ysim(chik_p1(:,j));
+        [gam_p1(:,j)] = h_ysim_6(chik_p1(:,j));
     end
     %%%%%%%%%%%%%%%%%%%
     %part c - get predicted measurement mean and measurement covar
@@ -181,7 +181,7 @@ for i = 1:length(tvec)
     % 
     % end
 
-    Pyy_p1 = zeros(3); % post omega
+    Pyy_p1 = zeros(6); % post omega
     for j = 1:2*n+1
         % meas_diff = (gam_p1(:,j) - ym_p1(:,i))/ norm(gam_p1(:,j) - ym_p1(:,i));
         % P_iter_yy = 1/(2*n+1)*(meas_diff)*(meas_diff');
@@ -193,7 +193,7 @@ for i = 1:length(tvec)
     %%%%%%%%%%%%%%%%%%%
     %part d - get state measurement cross-covariance matrix (nxp)
     %%%%%%%%%%%%%%%%%%%  
-    Cxy_p1 = zeros(6,3); % post omega was 6,3
+    Cxy_p1 = zeros(6,6); % post omega was 6,3
     for j = 1:2*n+1
         Pxy_p1_iter = 1/(2*n+1)*(Wp(:,j)*(gam_p1(:,j)-ym_p1(:,i))');
         Cxy_p1 = Cxy_p1 + Pxy_p1_iter;
