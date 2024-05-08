@@ -1,18 +1,18 @@
 function [x_ukf,P_ukf,NEES,NIS] = UKFSunSensor(x_t,y_t,tvec,c)
 % load('orbitdeterm_finalproj_KFdata.mat')
 
-xp = x_t(:,1); % initial value of x
+xp = x_t(:,3); % initial value of x
 Pp = 0.01*eye(6);  % Define covariance - 6 because only 6 DOF (quaternions are constrained to 3)
 % Pp(1:3,1:3) = 0.01*eye(3);
 % Rk = 0.001*eye(3); % Measurement noise - pre omega
-Rk = 0.1*eye(20); % Measurement noise
-Qk = 0.001*eye(6);
+Rk = 0.01*eye(20); % Measurement noise
+Qk = 0.0001*eye(6);
 
 % preallocate for UKF loop
 n = length(Pp(:,1)); 
 kappa = 0;
 beta = 2; 
-alpha = sqrt(2); % smaller values go to EKF
+alpha = 0.9; % smaller values go to EKF
 lambda = alpha^2 * (n+kappa)-n; 
 tlast = 0;
 x_ukf = zeros(6,length(tvec));
@@ -22,7 +22,7 @@ for i = 1:length(tvec)
     %reset each loop
     % Sk = chol(Pp+Qk,'lower');
     Sk = chol(Pp,'lower');
-    i;
+    i
     
 %% 1. dynamics prediction step from time step k->k+1
     %%%%%%%%%%%%%%%%%%%
@@ -91,12 +91,12 @@ for i = 1:length(tvec)
     chik0_p1 = xm_p1;
 
     for j = 1:n
-        W = sqrt(n+lambda)*Sk(j,:)';
+        W = sqrt(n+lambda)*Sk_p1(j,:)';
         chik_p1(:,j) = xm_p1+W;
     end
 
     for j = (n+1):2*n
-        W = -sqrt(n+lambda)*Sk(j-n,:)';
+        W = -sqrt(n+lambda)*Sk_p1(j-n,:)';
         chik_p1(:,j) = xm_p1+W;
     end
 
@@ -143,6 +143,7 @@ for i = 1:length(tvec)
     update = Kk_p1*(y_t(i,:)' - ym_p1(:,i));
 
     xp_p1 = xm_p1+update;
+    xp_p1(1:3) = xp_p1(1:3)/ norm(xp_p1(1:3)); 
     Pp_p1 = Pm_p1 - Kk_p1*Pyy_p1*Kk_p1'; 
     
     %Store variables

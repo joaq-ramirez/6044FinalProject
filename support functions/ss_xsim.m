@@ -6,8 +6,8 @@ func = @(inp)[
         ];
 
     tstep = 1; 
-    Rsk = IC(1:3); 
-    w_sc = IC(4:6);
+    % Rsk = IC(1:3); 
+    % w_sc = IC(4:6);
     
     % Rsk1 = Euler3122C(w_sc*tstep)*Rsk; 
     % Rsk1 =  -cross(w_sc,Rsk);

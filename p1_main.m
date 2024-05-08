@@ -97,9 +97,9 @@ end
 % [x_gsf,P_gsf] = GSF(x_t(:,3:length(x_t)),y_t(:,3:length(y_t)),tvec(3:length(tvec)),c);
 
 %% Sun Sensor UKF
-ys_t = ss_meas; 
+ys_t = ss_meas(3:end,:); 
 xs_t = [y_t; w_BN'] ;
-[x_ukf,P_ukf,NEES,NIS] = UKFSunSensor(xs_t,ys_t,tvec(3:length(tvec)),c); % y_t is our new state
+[x_ukf,P_ukf,NEES,NIS] = UKFSunSensor(xs_t,ys_t,tvec(3:length(ys_t)),c); % y_t is our new state
 
 %% Inital plotting of sim data
 
@@ -116,17 +116,35 @@ xs_t = [y_t; w_BN'] ;
 
 figure
 subplot(3,1,1)
-plot(tvec(3:601),xs_t(1,3:601),tvec(3:601),x_ukf(1,1:599),tvec(3:601),noisy_y(1,1:599))
+title('UKF Sun Sensor Pred. w/Noisy/Reflection Sensor Data')
+plot(tvec(3:length(ys_t)),xs_t(1,3:length(ys_t)),tvec(3:length(ys_t)),x_ukf(1,1:length(ys_t)-2),tvec(3:601),noisy_y(1,1:599))
+ylabel('Sun Bector {}^Bx_1')
 subplot(3,1,2)
-plot(tvec(3:601),xs_t(2,3:601),tvec(3:601),x_ukf(2,1:599),tvec(3:601),noisy_y(2,1:599))
+plot(tvec(3:length(ys_t)),xs_t(2,3:length(ys_t)),tvec(3:length(ys_t)),x_ukf(2,1:length(ys_t)-2),tvec(3:601),noisy_y(2,1:599))
+ylabel('Sun Bector {}^Bx_2')
 subplot(3,1,3)
-plot(tvec(3:601),xs_t(3,3:601),tvec(3:601),x_ukf(3,1:599),tvec(3:601),noisy_y(3,1:599))
+plot(tvec(3:length(ys_t)),xs_t(3,3:length(ys_t)),tvec(3:length(ys_t)),x_ukf(3,1:length(ys_t)-2),tvec(3:601),noisy_y(3,1:599))
+ylabel('Sun Bector {}^Bx_3')
+legend(["Truth","UKF Prediction", "Noisy Data"])
+xlabel('Time (s)')
+for i = 1:length(ys_t)-2
+   ang(i) =  acos(dot(xs_t(:,i+2), x_ukf(:,i)));
+end
+
+figure
+plot(tvec(3:length(ys_t)),ang)
 
 
 figure
 subplot(3,1,1)
-plot(tvec(3:601),x_t(5,3:601),tvec(3:601),x_ukf(4,1:599))
+title('UKF Angular Rate Pred. w/Noisy/Reflection Sensor Data')
+plot(tvec(3:length(ys_t)),xs_t(4,3:length(ys_t)),tvec(3:length(ys_t)),x_ukf(4,1:length(ys_t)-2))
+ylabel('{}^B\omega_1')
 subplot(3,1,2)
-plot(tvec(3:601),x_t(6,3:601),tvec(3:601),x_ukf(5,1:599))
+plot(tvec(3:length(ys_t)),xs_t(5,3:length(ys_t)),tvec(3:length(ys_t)),x_ukf(5,1:length(ys_t)-2))
+ylabel('{}^B\omega_2')
 subplot(3,1,3)
-plot(tvec(3:601),x_t(7,3:601),tvec(3:601),x_ukf(6,1:599))
+plot(tvec(3:length(ys_t)),xs_t(6,3:length(ys_t)),tvec(3:length(ys_t)),x_ukf(6,1:length(ys_t)-2))
+ylabel('{}^B\omega_3')
+legend(["Truth","UKF Prediction", "Noisy Data"])
+xlabel('Time (s)')
